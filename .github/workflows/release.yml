@@ -37,6 +37,7 @@ jobs:
           pushd build; sha256sum ttyd.* > SHA256SUMS; popd
       - uses: ncipollo/release-action@v1
         with:
+          token: ${{ github.token }}
           artifacts: build/*
           allowUpdates: true
           draft: true
