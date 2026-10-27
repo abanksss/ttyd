@@ -5,6 +5,7 @@
 #
 set -eo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CROSS_ROOT="${CROSS_ROOT:-/opt/cross}"
 STAGE_ROOT="${STAGE_ROOT:-/opt/stage}"
 BUILD_ROOT="${BUILD_ROOT:-/opt/build}"
@@ -60,13 +61,18 @@ map_openssl_target() {
 build_openssl() {
     openssl_target=$(map_openssl_target "${BUILD_TARGET}")
     echo "=== Building openssl-${OPENSSL_VERSION} (${openssl_target})..."
-    curl -sLo- "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" | tar xz -C "${BUILD_DIR}"
+    curl -fSsLo- "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" | tar xz -C "${BUILD_DIR}"
     pushd "${BUILD_DIR}/openssl-${OPENSSL_VERSION}"
         openssl_cflags="-fPIC -latomic"
         case ${BUILD_TARGET} in
             s390x) openssl_cflags="${openssl_cflags} -march=z10" ;;
             win32)
-                curl -sLo- https://github.com/openssl/openssl/pull/29826.patch | patch -p1
+                # The workaround is already present in newer OpenSSL patch releases.
+                case ${OPENSSL_VERSION} in
+                    3.5.5|3.6.1)
+                        patch --batch -p1 < "${SCRIPT_DIR}/openssl-mingw-sio-udp-netreset.patch"
+                        ;;
+                esac
                 ;;
         esac
         env CC=gcc CROSS_COMPILE="${TARGET}-" CFLAGS="${openssl_cflags}" \
