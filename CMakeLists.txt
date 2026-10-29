@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(ttyd VERSION 1.7.8 LANGUAGES C)
+project(ttyd VERSION 1.7.9 LANGUAGES C)
 
 # libwebsockets >= 4.4.0 (up to at least 5.0.0) has permessage-deflate bugs
 # that make it drop the connection with "rx buffer underflow" on large
