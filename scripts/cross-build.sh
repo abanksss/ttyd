@@ -36,6 +36,7 @@ build_json-c() {
             -DCMAKE_INSTALL_PREFIX="${STAGE_DIR}" \
             -DBUILD_SHARED_LIBS=OFF \
             -DBUILD_TESTING=OFF \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DDISABLE_THREAD_LOCAL_STORAGE=ON \
             ..
         make -j"$(nproc)" install
@@ -102,7 +103,7 @@ set(CMAKE_FIND_ROOT_PATH "${STAGE_DIR}")
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 EOF
 }
@@ -111,6 +112,14 @@ build_libwebsockets() {
     echo "=== Building libwebsockets-${LIBWEBSOCKETS_VERSION} (${TARGET})..."
     curl -fSsLo- "https://github.com/warmcat/libwebsockets/archive/v${LIBWEBSOCKETS_VERSION}.tar.gz" | tar xz -C "${BUILD_DIR}"
     pushd "${BUILD_DIR}/libwebsockets-${LIBWEBSOCKETS_VERSION}"
+        # Backport the upstream pmd rx fixes: a compressed message larger than
+        # the pmd rx buffer made libwebsockets drop the connection ("rx buffer
+        # underflow"), and zlib could keep consuming the caller's rx buffer
+        # after it had been reused (upstream 3e9d2ae5e1, 2fa375756a).
+        if grep -q "rx buffer underflow" lib/roles/ws/ext/extension-permessage-deflate.c; then
+            patch --batch -p1 < "${SCRIPT_DIR}/libwebsockets-pmd-rx-underflow.patch"
+            patch --batch -p1 < "${SCRIPT_DIR}/libwebsockets-pmd-rx-ownership.patch"
+        fi
         sed -i 's/ websockets_shared//g' cmake/libwebsockets-config.cmake.in
         rm -rf build && mkdir -p build && cd build
         cmake -DCMAKE_TOOLCHAIN_FILE="${BUILD_DIR}/cross-${TARGET}.cmake" \
@@ -153,6 +162,7 @@ build_ttyd() {
     rm -rf build && mkdir -p build && cd build
     cmake -DCMAKE_TOOLCHAIN_FILE="${BUILD_DIR}/cross-${TARGET}.cmake" \
         -DCMAKE_INSTALL_PREFIX="${STAGE_DIR}" \
+        -DTTYD_LWS_PMD_FIXED=ON \
         -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" \
         -DCMAKE_C_FLAGS="-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -flto" \
         -DCMAKE_EXE_LINKER_FLAGS="-static -no-pie -Wl,-s -Wl,-Bsymbolic -Wl,--gc-sections" \
