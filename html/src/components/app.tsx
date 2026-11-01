@@ -19,6 +19,7 @@ const clientOptions = {
     closeOnDisconnect: false,
     isWindows: false,
     unicodeVersion: '11',
+    enableCtrlVPaste: false,
 } as ClientOptions;
 const termOptions = {
     fontSize: 13,
