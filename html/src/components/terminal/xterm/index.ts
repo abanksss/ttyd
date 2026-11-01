@@ -50,6 +50,7 @@ export interface ClientOptions {
     trzszDragInitTimeout: number;
     unicodeVersion: string;
     closeOnDisconnect: boolean;
+    enableCtrlVPaste: boolean;
 }
 
 export interface FlowControl {
@@ -99,6 +100,7 @@ export class Xterm {
     private reconnect = true;
     private doReconnect = true;
     private closeOnDisconnect = false;
+    private enableCtrlVPaste = false;
 
     private writeFunc = (data: ArrayBuffer) => this.writeData(new Uint8Array(data));
 
@@ -152,6 +154,20 @@ export class Xterm {
     @bind
     public open(parent: HTMLElement) {
         this.terminal = new Terminal(this.options.termOptions);
+        this.terminal.attachCustomKeyEventHandler(event => {
+            if (
+                this.enableCtrlVPaste &&
+                event.type === 'keydown' &&
+                event.ctrlKey &&
+                !event.shiftKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                event.code === 'KeyV'
+            ) {
+                return false;
+            }
+            return true;
+        });
         const { terminal, fitAddon, overlayAddon, clipboardAddon, webLinksAddon } = this;
         window.term = terminal as TtydTerminal;
         window.term.fit = () => {
@@ -408,6 +424,9 @@ export class Xterm {
                     break;
                 case 'enableZmodem':
                     if (value) console.log('[ttyd] Zmodem enabled');
+                    break;
+                case 'enableCtrlVPaste':
+                    this.enableCtrlVPaste = value;
                     break;
                 case 'enableTrzsz':
                     if (value) console.log('[ttyd] trzsz enabled');
