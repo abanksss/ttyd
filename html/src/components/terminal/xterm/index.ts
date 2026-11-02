@@ -169,6 +169,18 @@ export class Xterm {
         this.terminal = new Terminal(this.options.termOptions);
         this.terminal.attachCustomKeyEventHandler(event => {
             if (
+                event.type === 'keydown' &&
+                event.ctrlKey &&
+                !event.shiftKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                event.key === '/'
+            ) {
+                event.preventDefault();
+                this.sendData('\x1f');
+                return false;
+            }
+            if (
                 this.enableCtrlVPaste &&
                 event.type === 'keydown' &&
                 event.ctrlKey &&
