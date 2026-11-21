@@ -50,6 +50,7 @@ export interface ClientOptions {
     trzszDragInitTimeout: number;
     unicodeVersion: string;
     closeOnDisconnect: boolean;
+    enableCtrlVPaste: boolean;
 }
 
 export interface FlowControl {
@@ -99,6 +100,7 @@ export class Xterm {
     private reconnect = true;
     private doReconnect = true;
     private closeOnDisconnect = false;
+    private enableCtrlVPaste = false;
 
     private writeFunc = (data: ArrayBuffer) => this.writeData(new Uint8Array(data));
 
@@ -163,6 +165,17 @@ export class Xterm {
             ) {
                 event.preventDefault();
                 this.sendData('\x1f');
+                return false;
+            }
+            if (
+                this.enableCtrlVPaste &&
+                event.type === 'keydown' &&
+                event.ctrlKey &&
+                !event.shiftKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                event.code === 'KeyV'
+            ) {
                 return false;
             }
             return true;
@@ -423,6 +436,9 @@ export class Xterm {
                     break;
                 case 'enableZmodem':
                     if (value) console.log('[ttyd] Zmodem enabled');
+                    break;
+                case 'enableCtrlVPaste':
+                    this.enableCtrlVPaste = value;
                     break;
                 case 'enableTrzsz':
                     if (value) console.log('[ttyd] trzsz enabled');
