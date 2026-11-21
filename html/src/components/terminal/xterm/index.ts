@@ -152,6 +152,21 @@ export class Xterm {
     @bind
     public open(parent: HTMLElement) {
         this.terminal = new Terminal(this.options.termOptions);
+        this.terminal.attachCustomKeyEventHandler(event => {
+            if (
+                event.type === 'keydown' &&
+                event.ctrlKey &&
+                !event.shiftKey &&
+                !event.altKey &&
+                !event.metaKey &&
+                event.key === '/'
+            ) {
+                event.preventDefault();
+                this.sendData('\x1f');
+                return false;
+            }
+            return true;
+        });
         const { terminal, fitAddon, overlayAddon, clipboardAddon, webLinksAddon } = this;
         window.term = terminal as TtydTerminal;
         window.term.fit = () => {
