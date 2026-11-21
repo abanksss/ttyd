@@ -85,7 +85,20 @@ export class Xterm {
     private terminal: Terminal;
     private fitAddon = new FitAddon();
     private overlayAddon = new OverlayAddon();
-    private clipboardAddon = new ClipboardAddon();
+    private clipboardAddon = new ClipboardAddon(undefined, {
+        readText: selection => {
+            if (selection === 'c' || !selection) {
+                return navigator.clipboard.readText();
+            }
+            return Promise.resolve('');
+        },
+        writeText: (selection, text) => {
+            if (selection === 'c' || !selection) {
+                return navigator.clipboard.writeText(text);
+            }
+            return Promise.resolve();
+        },
+    });
     private webLinksAddon = new WebLinksAddon();
     private webglAddon?: WebglAddon;
     private zmodemAddon?: ZmodemAddon;
